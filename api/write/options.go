@@ -29,6 +29,8 @@ type Options struct {
 	retryBufferLimit uint
 	// Maximum retry interval, default 5min (300,000ms)
 	maxRetryInterval uint
+	// Whether to abort newly income buffer when writeBuffer is full. Default false
+	abortPolicy bool
 }
 
 // BatchSize returns size of batch
@@ -135,7 +137,18 @@ func (o *Options) DefaultTags() map[string]string {
 	return o.defaultTags
 }
 
+// AbortPolicy returns abortPolicy setting, default false.
+func (o *Options) AbortPolicy() bool {
+	return o.abortPolicy
+}
+
+// SetAbortPolicy specifies whether to abort newly income buffer when writeBuffer is full.
+func (o *Options) SetAbortPolicy(abortPolicy bool) *Options {
+	o.abortPolicy = abortPolicy
+	return o
+}
+
 // DefaultOptions returns Options object with default values
 func DefaultOptions() *Options {
-	return &Options{batchSize: 5000, maxRetries: 3, retryInterval: 5000, maxRetryInterval: 300000, flushInterval: 1000, precision: time.Nanosecond, useGZip: false, retryBufferLimit: 50000, defaultTags: make(map[string]string)}
+	return &Options{batchSize: 5000, maxRetries: 3, retryInterval: 5000, maxRetryInterval: 300000, flushInterval: 1000, precision: time.Nanosecond, useGZip: false, retryBufferLimit: 50000, defaultTags: make(map[string]string), abortPolicy: false}
 }

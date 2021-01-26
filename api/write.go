@@ -58,7 +58,7 @@ func NewWriteAPI(org string, bucket string, service http2.Service, writeOptions 
 	w := &WriteAPIImpl{
 		service:      iwrite.NewService(org, bucket, service, writeOptions),
 		writeBuffer:  make([]string, 0, writeOptions.BatchSize()+1),
-		writeCh:      make(chan *iwrite.Batch),
+		writeCh:      make(chan *iwrite.Batch, 1),
 		bufferCh:     make(chan string),
 		bufferStop:   make(chan struct{}),
 		writeStop:    make(chan struct{}),
@@ -115,9 +115,11 @@ x:
 	for {
 		select {
 		case line := <-w.bufferCh:
-			w.writeBuffer = append(w.writeBuffer, line)
-			if len(w.writeBuffer) == int(w.writeOptions.BatchSize()) {
-				w.flushBuffer()
+			if len(w.writeBuffer) < int(w.writeOptions.BatchSize()) {
+				w.writeBuffer = append(w.writeBuffer, line)
+				if len(w.writeBuffer) == int(w.writeOptions.BatchSize()) {
+					w.flushBuffer()
+				}
 			}
 		case <-ticker.C:
 			w.flushBuffer()
@@ -137,7 +139,10 @@ x:
 }
 
 func (w *WriteAPIImpl) flushBuffer() {
-	if len(w.writeBuffer) > 0 {
+	if w.writeOptions.AbortPolicy() && len(w.writeCh) >= 1 {
+		return
+	}
+	if len(w.writeBuffer) > 0 && len(w.writeBuffer) <= int(w.writeOptions.BatchSize()) {
 		log.Info("sending batch")
 		batch := iwrite.NewBatch(buffer(w.writeBuffer), w.writeOptions.RetryInterval())
 		w.writeCh <- batch

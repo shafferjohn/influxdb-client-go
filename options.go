@@ -196,6 +196,17 @@ func (o *Options) AddDefaultTag(key, value string) *Options {
 	return o
 }
 
+// AbortPolicy returns abortPolicy setting, default false.
+func (o *Options) AbortPolicy() bool {
+	return o.WriteOptions().AbortPolicy()
+}
+
+// SetAbortPolicy specifies whether to abort newly income buffer when writeBuffer is full.
+func (o *Options) SetAbortPolicy(abortPolicy bool) *Options {
+	o.WriteOptions().SetAbortPolicy(abortPolicy)
+	return o
+}
+
 // DefaultOptions returns Options object with default values
 func DefaultOptions() *Options {
 	return &Options{logLevel: 0, writeOptions: write.DefaultOptions(), httpOptions: http.DefaultOptions()}
